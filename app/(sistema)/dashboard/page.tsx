@@ -16,14 +16,11 @@ import {
   CartesianGrid,
 } from "recharts";
 
-
 export default function Dashboard() {
   const [transacoes, setTransacoes] = useState<any[]>([]);
 
-  // FILTRO
   const [mes, setMes] = useState<string>("todos");
   const [ano, setAno] = useState(new Date().getFullYear());
-
 
   async function carregar() {
     const { data } = await supabase
@@ -54,7 +51,7 @@ export default function Dashboard() {
     );
   });
 
-  // CARDS BASEADOS NO FILTRO
+  // CARDS
   const entradas = filtrados
     .filter((t) => t.tipo === "entrada")
     .reduce((acc, t) => acc + Number(t.valor), 0);
@@ -64,19 +61,13 @@ export default function Dashboard() {
     .reduce((acc, t) => acc + Number(t.valor), 0);
 
   const saldo = entradas - saidas;
+
   const dadosBarras = [
-    {
-      name: "Entradas",
-      valor: entradas,
-    },
-    {
-      name: "Saídas",
-      valor: saidas,
-    },
+    { name: "Entradas", valor: entradas },
+    { name: "Saídas", valor: saidas },
   ];
 
-
-  // AGRUPAR DESPESAS POR CATEGORIA (USANDO FILTRADOS)
+  // AGRUPAR DESPESAS POR CATEGORIA
   const categoriasMap: Record<string, number> = {};
 
   filtrados
@@ -91,10 +82,17 @@ export default function Dashboard() {
       categoriasMap[categoria] += Number(t.valor);
     });
 
-  const dadosGrafico = Object.keys(categoriasMap).map((cat) => ({
-    name: cat,
-    value: categoriasMap[cat],
-  }));
+  const dadosGrafico = Object.keys(categoriasMap)
+    .map((cat) => ({
+      name: cat,
+      value: categoriasMap[cat],
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  const totalDespesas = dadosGrafico.reduce(
+    (acc, item) => acc + item.value,
+    0
+  );
 
   const cores = [
     "#8b5cf6",
@@ -108,7 +106,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0b0b14] to-[#090910] text-white p-12">
-
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -125,7 +122,6 @@ export default function Dashboard() {
           className="bg-[#1a1a26] p-3 rounded"
         >
           <option value="todos">Todos os meses</option>
-
           <option value="1">Jan</option>
           <option value="2">Fev</option>
           <option value="3">Mar</option>
@@ -150,7 +146,6 @@ export default function Dashboard() {
 
       {/* CARDS */}
       <div className="grid grid-cols-3 gap-8 mb-12">
-
         <div className="bg-gradient-to-br from-[#0f2e2a]/60 to-[#0b1f1c]/40 border border-emerald-500/10 backdrop-blur-xl p-8 rounded-2xl shadow-lg">
           <p className="text-gray-400 text-sm">Entradas</p>
           <p className="text-4xl font-bold mt-3 text-emerald-300">
@@ -167,10 +162,11 @@ export default function Dashboard() {
 
         <div
           className={`p-8 rounded-2xl backdrop-blur-xl border shadow-lg
-          ${saldo >= 0
+          ${
+            saldo >= 0
               ? "bg-gradient-to-br from-[#0f2e2a]/60 to-[#0b1f1c]/40 border-emerald-500/10"
               : "bg-gradient-to-br from-[#2a0f14]/60 to-[#1a0b0f]/40 border-red-500/10"
-            }`}
+          }`}
         >
           <p className="text-gray-400 text-sm">Saldo</p>
           <p className="text-4xl font-bold mt-3">
@@ -179,11 +175,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* GRÁFICO */}
       {/* GRÁFICOS */}
       <div className="grid grid-cols-2 gap-8 mb-12">
-
-        {/* GRÁFICO DE BARRAS */}
+        {/* BARRAS */}
         <div className="bg-[#12121c]/80 p-8 rounded-2xl border border-white/5">
           <h2 className="text-lg font-semibold mb-6 text-gray-300">
             Entradas x Saídas
@@ -204,7 +198,7 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* GRÁFICO DE PIZZA */}
+        {/* PIZZA */}
         <div className="bg-[#12121c]/80 p-8 rounded-2xl border border-white/5">
           <h2 className="text-lg font-semibold mb-6 text-gray-300">
             Despesas por categoria
@@ -219,20 +213,30 @@ export default function Dashboard() {
                 cx="50%"
                 cy="50%"
                 outerRadius={120}
-                label
+                label={(props: any) => {
+                  const percent = props.percent;
+                  if (!percent || percent < 0.05) return "";
+                  return `${(percent * 100).toFixed(0)}%`;
+                }}
               >
                 {dadosGrafico.map((_, index) => (
                   <Cell key={index} fill={cores[index % cores.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+
+              <Tooltip
+                formatter={(value: any) => {
+                  const num = Number(value);
+                  const percent = ((num / totalDespesas) * 100).toFixed(1);
+                  return [`R$ ${num} (${percent}%)`, "Valor"];
+                }}
+              />
+
               <Legend />
             </PieChart>
           </ResponsiveContainer>
         </div>
-
       </div>
-
 
       {/* TABELA */}
       <div className="bg-[#12121c]/80 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden shadow-xl">
@@ -266,7 +270,6 @@ export default function Dashboard() {
                 </td>
 
                 <td className="p-6">{t.categoria}</td>
-
                 <td className="p-6 text-gray-400">{t.descricao}</td>
 
                 <td className="p-6 text-gray-500">

@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "Controle Financeiro",
-  description: "App financeiro pessoal",
+  description: "Sistema financeiro pessoal",
 };
 
 export default function RootLayout({
@@ -12,7 +12,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-br">
-      <body>{children}</body>
+      <body className="bg-[#0b0b14] text-white">
+        {children}
+      </body>
     </html>
   );
 }
